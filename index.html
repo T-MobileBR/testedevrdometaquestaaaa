@@ -1,105 +1,72 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Meta Quest Test</title>
-  <style>
-    html, body {
-      margin: 0;
-      overflow: hidden;
-      background: black;
-      font-family: Arial, sans-serif;
-    }
-
-    #debug {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      color: white;
-      background: rgba(0,0,0,.6);
-      padding: 10px;
-      border-radius: 8px;
-      z-index: 999;
-      font-size: 14px;
-    }
-
-    canvas {
-      display: block;
-    }
-  </style>
+<meta charset="utf-8">
+<title>Quest Controller Test</title>
+<style>
+body { margin:0; overflow:hidden; }
+canvas { display:block; }
+</style>
 </head>
 <body>
-  <div id="debug">Carregando...</div>
 
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-    import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js';
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js';
 
-    const debug = document.getElementById("debug");
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x222244);
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb);
+const camera = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
 
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true;
-    document.body.appendChild(renderer.domElement);
-    document.body.appendChild(VRButton.createButton(renderer));
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(VRButton.createButton(renderer));
 
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
-    scene.add(hemi);
+const light = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
+scene.add(light);
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(100, 100),
-      new THREE.MeshStandardMaterial({ color: 0x55aa55 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    scene.add(ground);
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(20,20),
+  new THREE.MeshStandardMaterial({ color:0x444444 })
+);
 
-    for (let i = 0; i < 20; i++) {
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3, 0.3, 4),
-        new THREE.MeshStandardMaterial({ color: 0x8b4513 })
-      );
-      trunk.position.set(Math.random()*40-20, 2, Math.random()*40-20);
-      scene.add(trunk);
+floor.rotation.x = -Math.PI/2;
+scene.add(floor);
 
-      const leaves = new THREE.Mesh(
-        new THREE.SphereGeometry(1.5),
-        new THREE.MeshStandardMaterial({ color: 0x228b22 })
-      );
-      leaves.position.copy(trunk.position);
-      leaves.position.y += 2.5;
-      scene.add(leaves);
-    }
+camera.position.set(0, 1.6, 3);
 
-    const player = new THREE.Group();
-    player.position.set(0, 1.7, 0);
-    scene.add(player);
+// controller
+const controller = renderer.xr.getController(0);
+scene.add(controller);
 
-    camera.position.copy(player.position);
+// cube attached to controller
+const cube = new THREE.Mesh(
+  new THREE.BoxGeometry(0.1,0.1,0.1),
+  new THREE.MeshStandardMaterial({ color:0xffffff })
+);
 
-    const controller = renderer.xr.getController(0);
-    scene.add(controller);
+cube.position.set(0, 0, -0.2);
+controller.add(cube);
 
-    let controllerConnected = false;
+renderer.setAnimationLoop(() => {
+  renderer.render(scene, camera);
+});
 
-    controller.addEventListener('connected', () => {
-      controllerConnected = true;
-      debug.innerText = "Controle conectado ✅";
-    });
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
 
-    controller.addEventListener('disconnected', () => {
-      controllerConnected = false;
-      debug.innerText = "Controle desconectado ❌";
-    });
-
-    const hand = new THREE.Group();
+</body>
+</html>
