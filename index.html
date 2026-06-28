@@ -1,73 +1,109 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FOX BOX WEB</title>
-
+<meta charset="utf-8">
+<title>Oculus Quest Teste</title>
 <style>
-body{
-    margin:0;
-    font-family: Arial, Helvetica, sans-serif;
-    background:#0a0a0a;
-    color:white;
-    text-align:center;
-}
-
-header{
-    background:linear-gradient(90deg,#ff6a00,#ff0000);
-    padding:25px;
-    font-size:40px;
-    font-weight:bold;
-    letter-spacing:3px;
-}
-
-.player{
-    margin-top:30px;
-}
-
-iframe{
-    width:90%;
-    max-width:900px;
-    height:500px;
-    border:none;
-    border-radius:15px;
-    box-shadow:0 0 25px rgba(255,100,0,0.6);
-}
-
-.info{
-    margin-top:20px;
-    font-size:18px;
-    color:#ccc;
-}
-
-footer{
-    margin-top:40px;
-    padding:20px;
-    background:#111;
-    color:#777;
-}
+body { margin:0; overflow:hidden; }
+canvas { display:block; }
 </style>
 </head>
-
 <body>
 
-<header>
-FOX BOX WEB
-</header>
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import { VRButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/VRButton.js';
 
-<div class="player">
-    <!-- COLE AQUI O LINK DO PLAYER DA SUA WEBTV -->
-    <iframe src="https://vs20.live.opencaster.com/foxboxweb_53bd9199/index.m3u8"></iframe>
-</div>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
 
-<div class="info">
-The FoxBox Web Rocks!
-</div>
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 
-<footer>
-©2026 FoxBox Web
-</footer>
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.xr.enabled = true;
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(VRButton.createButton(renderer));
 
+const light = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
+scene.add(light);
+
+// Ground
+const ground = new THREE.Mesh(
+ new THREE.PlaneGeometry(100,100),
+ new THREE.MeshStandardMaterial({color:0x55aa55})
+);
+ground.rotation.x = -Math.PI/2;
+scene.add(ground);
+
+// Trees
+for(let i=0;i<15;i++){
+ const trunk = new THREE.Mesh(
+   new THREE.CylinderGeometry(0.3,0.3,4),
+   new THREE.MeshStandardMaterial({color:0x8b4513})
+ );
+ trunk.position.set(Math.random()*40-20,2,Math.random()*40-20);
+ scene.add(trunk);
+
+ const leaves = new THREE.Mesh(
+   new THREE.SphereGeometry(1.5),
+   new THREE.MeshStandardMaterial({color:0x228b22})
+ );
+ leaves.position.copy(trunk.position);
+ leaves.position.y += 2.5;
+ scene.add(leaves);
+}
+
+// Platforms
+for(let i=0;i<5;i++){
+ const p = new THREE.Mesh(
+   new THREE.BoxGeometry(4,0.5,4),
+   new THREE.MeshStandardMaterial()
+ );
+ p.position.set(Math.random()*20-10, Math.random()*5+2, Math.random()*20-10);
+ scene.add(p);
+}
+
+const player = new THREE.Group();
+player.position.set(0,1.7,0);
+scene.add(player);
+
+const controller1 = renderer.xr.getController(0);
+const controller2 = renderer.xr.getController(1);
+scene.add(controller1);
+scene.add(controller2);
+
+let velocity = new THREE.Vector3();
+
+function animate(){
+ renderer.setAnimationLoop(render);
+}
+
+function render(){
+ const pushing =
+   controller1.userData.selectPressed ||
+   controller2.userData.selectPressed;
+
+ if(pushing){
+   const forward = new THREE.Vector3(0,0,-1);
+   forward.applyQuaternion(camera.quaternion);
+   velocity.add(forward.multiplyScalar(-0.01));
+ }
+
+ velocity.multiplyScalar(0.94);
+ player.position.add(velocity);
+
+ camera.position.copy(player.position);
+
+ renderer.render(scene,camera);
+}
+
+controller1.addEventListener('selectstart', ()=> controller1.userData.selectPressed = true);
+controller1.addEventListener('selectend', ()=> controller1.userData.selectPressed = false);
+controller2.addEventListener('selectstart', ()=> controller2.userData.selectPressed = true);
+controller2.addEventListener('selectend', ()=> controller2.userData.selectPressed = false);
+
+animate();
+</script>
 </body>
 </html>
